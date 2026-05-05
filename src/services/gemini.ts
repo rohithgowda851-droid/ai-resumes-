@@ -1,6 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+// ✅ Prevent crash if key missing
+if (!apiKey) {
+  console.error("Missing VITE_GEMINI_API_KEY");
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 export interface AnalysisResult {
   score: number;
@@ -10,7 +17,10 @@ export interface AnalysisResult {
   feedback: string;
 }
 
-export async function rankResume(resumeText: string, jobDescription: string): Promise<AnalysisResult> {
+export async function rankResume(
+  resumeText: string,
+  jobDescription: string
+): Promise<AnalysisResult> {
   const prompt = `
     Analyze the following resume text against the job description provided.
     Provide a score from 0 to 100 based on how well the candidate matches the requirements.
@@ -26,18 +36,18 @@ export async function rankResume(resumeText: string, jobDescription: string): Pr
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-1.5-flash", // ✅ safer stable model
     contents: prompt,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          score: { type: Type.INTEGER, description: "A score from 0 to 100" },
-          strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of strengths" },
-          weaknesses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "List of areas for improvement" },
-          keywordMatch: { type: Type.NUMBER, description: "Percentage of keyword match (0-100)" },
-          feedback: { type: Type.STRING, description: "Detailed feedback to the recruiter" }
+          score: { type: Type.INTEGER },
+          strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+          weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+          keywordMatch: { type: Type.NUMBER },
+          feedback: { type: Type.STRING }
         },
         required: ["score", "strengths", "weaknesses", "keywordMatch", "feedback"]
       }
