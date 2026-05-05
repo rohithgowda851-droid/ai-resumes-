@@ -4,11 +4,9 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "scripts": {
-            "build": "vite build",
-            "start": "node server.js",
-            "dev": "vite"
-        }
+        "dev": "tsx server.ts",
+        "build": "vite build && tsx build-server.ts",
+        "start": "node dist/server.cjs"
     },
     "dependencies": {
         "@google/genai": "^1.29.0",
