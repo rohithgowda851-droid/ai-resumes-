@@ -1,0 +1,6 @@
+{
+  "name": "AI Resume Ranker & Database",
+  "description": "An AI-powered application to rank resumes against job descriptions, manage a candidate database, and visualize recruitment analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

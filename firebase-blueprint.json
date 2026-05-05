@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "recruiter"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "JobDescription": {
+      "title": "Job Description",
+      "description": "Job posting details for matching",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description"]
+    },
+    "Resume": {
+      "title": "Resume",
+      "description": "Candidate resume details and text",
+      "type": "object",
+      "properties": {
+        "candidateName": { "type": "string" },
+        "candidateEmail": { "type": "string" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "experience": { "type": "string" },
+        "extractedText": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["candidateName", "extractedText"]
+    },
+    "Analysis": {
+      "title": "Analysis",
+      "description": "AI analysis result for a resume against a job",
+      "type": "object",
+      "properties": {
+        "resumeId": { "type": "string" },
+        "jobId": { "type": "string" },
+        "score": { "type": "integer" },
+        "strengths": { "type": "array", "items": { "type": "string" } },
+        "weaknesses": { "type": "array", "items": { "type": "string" } },
+        "keywordMatch": { "type": "number" },
+        "feedback": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["resumeId", "jobId", "score"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Profiles for registered users"
+    },
+    "jobs/{jobId}": {
+      "schema": "JobDescription",
+      "description": "Job requirements defined by recruiters"
+    },
+    "resumes/{resumeId}": {
+      "schema": "Resume",
+      "description": "Uploaded resume documents and extracted data"
+    },
+    "analyses/{analysisId}": {
+      "schema": "Analysis",
+      "description": "Scoring and feedback for resumes vs jobs"
+    }
+  }
+}

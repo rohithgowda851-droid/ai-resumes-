@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // -------------------------------------------------------------------------
+    // 0. Global Safety Net & Deny-All
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // 1. Primitive Global Helpers
+    // -------------------------------------------------------------------------
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Auth Hardening: verify shared auth claims
+    function isEmailVerified() { return request.auth.token.email_verified == true; }
+    
+    // -------------------------------------------------------------------------
+    // 2. Role-Based Access Control (RBAC)
+    // -------------------------------------------------------------------------
+    // Determine if the user is an admin - can be bootstrapped by email or checked via user doc
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'rohithgowda851@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
+    function isRecruiter() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'recruiter' ||
+        isAdmin()
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. Collection Rules
+    // -------------------------------------------------------------------------
+
+    // --- Test Collection (for health checks) ---
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.keys().hasAll(['uid', 'email', 'role']) &&
+               data.keys().size() <= 6 &&
+               data.uid is string && data.uid == userId &&
+               data.email is string && data.email.size() <= 256 &&
+               data.role in ['admin', 'recruiter'];
+      }
+
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['displayName'])) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Jobs Collection ---
+    match /jobs/{jobId} {
+      function isValidJob(data) {
+        return data.keys().hasAll(['title', 'description']) &&
+               data.title is string && data.title.size() <= 200 &&
+               data.description is string && data.description.size() <= 10000;
+      }
+
+      allow read: if isSignedIn();
+      allow create: if isRecruiter() && isValidJob(incoming());
+      allow update: if (isRecruiter() && (existing().createdBy == request.auth.uid || isAdmin())) && isValidJob(incoming());
+      allow delete: if isAdmin() || (isRecruiter() && existing().createdBy == request.auth.uid);
+    }
+
+    // --- Resumes Collection ---
+    match /resumes/{resumeId} {
+      function isValidResume(data) {
+        return data.candidateName is string && data.candidateName.size() <= 200 &&
+               data.extractedText is string && data.extractedText.size() <= 100000;
+      }
+
+      allow read: if isRecruiter();
+      allow create: if isRecruiter() && isValidResume(incoming());
+      allow update: if isRecruiter() && isValidResume(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // --- Analyses Collection ---
+    match /analyses/{analysisId} {
+      function isValidAnalysis(data) {
+        return data.score is int && data.score >= 0 && data.score <= 100;
+      }
+
+      allow read: if isRecruiter();
+      allow create: if isRecruiter() && isValidAnalysis(incoming());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
