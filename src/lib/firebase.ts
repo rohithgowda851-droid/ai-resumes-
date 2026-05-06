@@ -1,33 +1,29 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
+
+import {
+  getAuth,
+  GoogleAuthProvider
+} from 'firebase/auth';
+
+import {
+  getFirestore
+} from 'firebase/firestore';
+
 import firebaseConfig from '../../firebase-applet-config.json';
 
+// ✅ Initialize Firebase app
 const app = initializeApp(firebaseConfig);
 
-console.log("Initializing Firestore with Database ID:", firebaseConfig.firestoreDatabaseId);
+// ✅ Firestore database
+export const db = getFirestore(app);
 
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
-
+// ✅ Firebase authentication
 export const auth = getAuth(app);
 
-// Validate connection
-async function testConnection() {
-  try {
-    console.log("Testing Firestore connection to /test/connection...");
-    // Use a very simple get call
-    const testDoc = doc(db, 'test', 'connection');
-    await getDocFromServer(testDoc);
-    console.log("Firestore connection successful.");
-  } catch (error: any) {
-    console.error("Firestore connection error:", {
-      code: error.code,
-      message: error.message,
-      databaseId: firebaseConfig.firestoreDatabaseId,
-      projectId: firebaseConfig.projectId
-    });
-  }
-}
-testConnection();
+// ✅ Google login provider
+export const provider = new GoogleAuthProvider();
+
+// Optional debug logs
+console.log("✅ Firebase initialized");
+console.log("✅ Auth initialized");
+console.log("✅ Firestore initialized");
